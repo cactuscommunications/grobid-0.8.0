@@ -2,6 +2,7 @@ package org.grobid.core.document;
 
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.SystemUtils;
+import org.apache.xpath.operations.Bool;
 import org.grobid.core.exceptions.GrobidException;
 import org.grobid.core.exceptions.GrobidExceptionStatus;
 import org.grobid.core.exceptions.GrobidResourceException;
@@ -41,7 +42,30 @@ public class DocumentSource {
     public static DocumentSource fromPdf(File pdfFile) {
         return fromPdf(pdfFile, -1, -1);
     }
+    
+    public static DocumentSource fromPdf(File pdfFile, File xmlFile ) {
+        Boolean withAnnotations = false, withImages = false, withOutline = false;
+        int startPage = -1;
+        int endPage = -1;
+        if (!pdfFile.exists() || pdfFile.isDirectory()) {
+            throw new GrobidException("Input PDF file " + pdfFile + " does not exist or a directory",
+                GrobidExceptionStatus.BAD_INPUT_DATA);
+        }
 
+        DocumentSource source = new DocumentSource();
+        source.cleanupXml = true;
+
+        try {
+            source.xmlFile = source.pdfalto(null, false, startPage, endPage, pdfFile,
+                xmlFile, withImages, withAnnotations, withOutline);
+        } catch (Exception e) {
+            source.close(withImages, withAnnotations, withOutline);
+            throw e;
+        } finally {
+        }
+        source.pdfFile = pdfFile;
+        return source;
+    }
     /**
      * By default the XML extracted from the PDF is without images, to avoid flooding the grobid-home/tmp directory,
 	 * but with the extra annotation file and with outline	
