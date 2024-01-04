@@ -8,11 +8,14 @@ import org.glassfish.jersey.media.multipart.FormDataParam;
 import org.grobid.core.engines.config.GrobidAnalysisConfig;
 import org.grobid.core.factory.AbstractEngineFactory;
 import org.grobid.core.utilities.GrobidProperties;
+import org.grobid.core.utilities.IOUtilities;
+import org.grobid.core.utilities.Utilities;
 import org.grobid.core.engines.Engine;
 import org.grobid.core.factory.GrobidPoolingFactory;
 
 import org.grobid.service.process.GrobidRestProcessFiles;
 import org.grobid.service.process.GrobidRestProcessGeneric;
+import org.grobid.service.exceptions.GrobidServiceException;
 import org.grobid.service.process.GrobidRestProcessString;
 import org.grobid.service.process.GrobidRestProcessTraining;
 import org.grobid.service.util.BibTexMediaType;
@@ -24,11 +27,15 @@ import org.slf4j.LoggerFactory;
 
 import jakarta.ws.rs.*;
 import jakarta.ws.rs.core.*;
+import jakarta.ws.rs.core.Response.Status;
+
 import java.io.File;
 import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.NoSuchElementException;
+import java.security.DigestInputStream;
+import java.security.MessageDigest;
 
 /**
  * RESTful service for the GROBID system.
@@ -219,6 +226,28 @@ public class GrobidRestService implements GrobidPaths {
         @DefaultValue("0") @FormDataParam(CONSOLIDATE_HEADER) String consolidate,
         @DefaultValue("0") @FormDataParam(INCLUDE_RAW_AFFILIATIONS) String includeRawAffiliations) {
         return processHeaderDocumentReturnBibTeX_post(inputStream, consolidate, includeRawAffiliations);
+    }
+
+
+    @Path(PATH_RAW_TEXT)
+    @POST
+    @Consumes(MediaType.MULTIPART_FORM_DATA)
+    @Produces(MediaType.APPLICATION_JSON)
+    public String processRawText(@FormDataParam(INPUT) InputStream pdfFile) throws Exception {
+    	File originFile = null;
+    	MessageDigest md = MessageDigest.getInstance("MD5");
+        DigestInputStream dis = new DigestInputStream(pdfFile, md); 
+
+    	originFile = IOUtilities.writeInputFile(dis);
+        if (originFile == null) {
+            LOGGER.error("The input file cannot be written.");
+            throw new GrobidServiceException(
+                "The input file cannot be written.", Status.INTERNAL_SERVER_ERROR);
+        }
+        String rawText = Utilities.getRawText(originFile);
+        IOUtilities.removeTempFile(originFile);
+    	return rawText;
+
     }
 
     @Path(PATH_FULL_TEXT)

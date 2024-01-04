@@ -39,6 +39,8 @@ public interface GrobidPaths {
 	 * path extension for processing document headers HTML.
 	 */
 	String PATH_HEADER_HTML = "processHeaderDocumentHTML";
+
+	String PATH_RAW_TEXT = "processRawText";
 	
 	/**
 	 * path extension for processing full text of documents.
