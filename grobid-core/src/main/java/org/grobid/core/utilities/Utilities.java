@@ -20,12 +20,17 @@ import java.util.Collections;
 import java.util.Date;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.nio.file.Files;
 
 import org.apache.commons.lang3.StringUtils;
 
 import org.grobid.core.data.BiblioItem;
+import org.grobid.core.document.DocumentSource;
+import org.grobid.core.engines.config.GrobidAnalysisConfig;
 import org.grobid.core.exceptions.GrobidException;
 import org.grobid.core.layout.LayoutToken;
+import org.grobid.core.document.Document;
+import org.grobid.core.document.DocumentSource;
 
 /**
  * Some utilities methods that I don't know where to put.
@@ -561,6 +566,28 @@ public class Utilities {
             }
         }
         return result;
+	}
+		public static String getRawText(File pdfInput) {
+//		File currPdf = new File("/Users/kshitij.sabarwal/Desktop/Demo/nougat/INKED_7.pdf");
+		File currPdf = pdfInput;
+        String baseName = currPdf.getName().replace(".pdf", "").replace(".PDF", "");
+        String assetPath = File.separator + baseName + "_assets";
+        GrobidAnalysisConfig config = GrobidAnalysisConfig.builder()
+            .pdfAssetPath(new File(assetPath))
+            .build();
+        File xmlPath = new File(currPdf.getParent());
+        GrobidProperties.getInstance();
+        DocumentSource documentSource = DocumentSource.fromPdf(currPdf, xmlPath);
+        Document doc = new Document(documentSource);
+        if (config.getAnalyzer() != null)
+            doc.setAnalyzer(config.getAnalyzer());
+        doc.addTokenizedDocument(config);
+        String raw_text = "";
+        for(LayoutToken layoutToken : doc.getTokenizations()){
+            raw_text+=layoutToken.getText();
+        }
+        documentSource.close(true, true, true);
+        return raw_text;
 	}
 
 }
